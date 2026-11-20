@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loja de Livros</title>
+<style>
+  :root { --cor:#7a3e1d; --fundo:#faf6f1; --borda:#e3d7c9; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: var(--fundo); color:#2b2118; }
+  header { background: var(--cor); color: #fff; padding: 16px 24px; }
+  header h1 { margin: 0; font-size: 1.4rem; }
+  main { max-width: 1100px; margin: 24px auto; padding: 0 16px; display: grid; gap: 20px; grid-template-columns: 340px 1fr; }
+  section { background:#fff; border:1px solid var(--borda); border-radius:10px; padding:16px; }
+  h2 { margin-top:0; font-size:1.1rem; }
+  label { display:block; font-size:.85rem; margin-top:8px; }
+  input { width:100%; padding:7px; border:1px solid var(--borda); border-radius:6px; }
+  button { cursor:pointer; border:0; border-radius:6px; padding:8px 12px; background:var(--cor); color:#fff; }
+  button.sec { background:#e9dfd3; color:#2b2118; }
+  button.del { background:#b3261e; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--borda); }
+  .zero { color:#b3261e; font-weight:600; }
+  .topo { display:flex; gap:8px; margin-bottom:12px; }
+  .resumo { display:flex; gap:12px; flex-wrap:wrap; font-size:.85rem; margin-bottom:12px; }
+  .resumo div { background:var(--fundo); border:1px solid var(--borda); border-radius:8px; padding:8px 12px; }
+  #erro { color:#b3261e; font-size:.85rem; white-space:pre-line; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header><h1>📚 Loja de Livros</h1></header>
+<main>
+  <section>
+    <h2 id="tituloForm">Novo livro</h2>
+    <form id="form">
+      <input type="hidden" id="id">
+      <label>Título <input id="titulo" required></label>
+      <label>Autor <input id="autor" required></label>
+      <label>ISBN (10 ou 13 dígitos) <input id="isbn" required></label>
+      <label>Preço (R$) <input id="preco" type="number" step="0.01" min="0.01" required></label>
+      <label>Estoque <input id="estoque" type="number" min="0" required></label>
+      <label>Ano de publicação <input id="anoPublicacao" type="number"></label>
+      <label>Gênero <input id="genero"></label>
+      <p id="erro"></p>
+      <button type="submit">Salvar</button>
+      <button type="button" class="sec" onclick="limpar()">Cancelar</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Acervo</h2>
+    <div class="resumo" id="resumo"></div>
+    <div class="topo">
+      <input id="busca" placeholder="Buscar por título ou autor..." oninput="carregar()">
+    </div>
+    <table>
+      <thead><tr><th>Título</th><th>Autor</th><th>Gênero</th><th>Preço</th><th>Estoque</th><th></th></tr></thead>
+      <tbody id="lista"></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+const API = '/api/livros';
+const campos = ['titulo','autor','isbn','preco','estoque','anoPublicacao','genero'];
+const $ = id => document.getElementById(id);
+const brl = v => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+
+async function carregar() {
+  const busca = $('busca').value;
+  const livros = await (await fetch(API + (busca ? '?busca=' + encodeURIComponent(busca) : ''))).json();
+  $('lista').innerHTML = livros.map(l => `
+    <tr>
+      <td>${esc(l.titulo)}</td><td>${esc(l.autor)}</td><td>${esc(l.genero || '-')}</td>
+      <td>${brl(l.preco)}</td>
+      <td class="${l.estoque === 0 ? 'zero' : ''}">${l.estoque}</td>
+      <td style="white-space:nowrap">
+        <button class="sec" onclick="editar(${l.id})">Editar</button>
+        <button class="del" onclick="excluir(${l.id})">Excluir</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6">Nenhum livro encontrado.</td></tr>';
+  carregarResumo();
+}
+
+async function carregarResumo() {
+  const r = await (await fetch(API + '/resumo')).json();
+  $('resumo').innerHTML = `
+    <div><b>${r.totalTitulos}</b> títulos</div>
+    <div><b>${r.totalExemplares}</b> exemplares</div>
+    <div>Valor em estoque: <b>${brl(r.valorEmEstoque)}</b></div>
+    <div>Preço médio: <b>${brl(r.precoMedio)}</b></div>`;
+}
+
+async function editar(id) {
+  const l = await (await fetch(`${API}/${id}`)).json();
+  $('id').value = l.id;
+  campos.forEach(c => $(c).value = l[c] ?? '');
+  $('tituloForm').textContent = 'Editar livro';
+  $('erro').textContent = '';
+}
+
+async function excluir(id) {
+  await fetch(`${API}/${id}`, { method: 'DELETE' });
+  if ($('id').value == id) limpar();
+  carregar();
+}
+
+function limpar() {
+  $('form').reset(); $('id').value = '';
+  $('tituloForm').textContent = 'Novo livro'; $('erro').textContent = '';
+}
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = $('id').value;
+  const corpo = Object.fromEntries(campos.map(c => [c, $(c).value === '' ? null : $(c).value]));
+  const resp = await fetch(id ? `${API}/${id}` : API, {
+    method: id ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo)
+  });
+  if (!resp.ok) {
+    const err = await resp.json();
+    $('erro').textContent = Object.values(err).join('\n');
+    return;
+  }
+  limpar(); carregar();
+});
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+carregar();
+</script>
+</body>
+</html>
