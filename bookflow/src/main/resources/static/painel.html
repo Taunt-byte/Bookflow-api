@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BookFlow · Painel do vendedor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/bookflow.css">
+<style>
+  .resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .resumo .card { padding: 12px 16px; }
+  .resumo small { color: var(--suave); display: block; }
+  .resumo b { font-size: 1.3rem; }
+  .painel { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+  .zero { color: var(--perigo); font-weight: 600; }
+  .acoes { white-space: nowrap; }
+  .acoes button { padding: 5px 10px; }
+  .topo { display: flex; gap: 8px; margin-bottom: 10px; }
+  @media (max-width: 860px) { .painel { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><span class="logo-marca" aria-hidden="true"><i></i><i></i><i></i></span>BookFlow</a>
+  <span class="subtitulo">Painel do vendedor</span>
+  <div class="espaco"></div>
+  <div class="usuario" id="areaUsuario"><a href="/">Ver loja</a></div>
+</header>
+
+<main>
+  <!-- Mostrado para quem não é vendedor -->
+  <section id="bloqueio" class="card oculto" style="max-width:380px;margin:40px auto">
+    <h2>Área restrita ao vendedor</h2>
+    <p id="msgBloqueio" class="dica">Entre com a conta de vendedor para gerenciar os livros.</p>
+    <form id="formLogin">
+      <label>E-mail <input id="loginEmail" type="email" required autocomplete="username"></label>
+      <label>Senha <input id="loginSenha" type="password" required autocomplete="current-password"></label>
+      <p class="erro" id="erroLogin"></p>
+      <button type="submit">Entrar</button>
+    </form>
+  </section>
+
+  <!-- Mostrado só para o vendedor -->
+  <div id="conteudo" class="oculto">
+    <div class="resumo" id="resumo"></div>
+
+    <div class="painel">
+      <section class="card">
+        <h2 id="tituloForm">Novo livro</h2>
+        <form id="formLivro">
+          <input type="hidden" id="id">
+          <label>Título <input id="titulo" required></label>
+          <label>Autor <input id="autor" required></label>
+          <label>ISBN (10 ou 13 dígitos) <input id="isbn" required></label>
+          <label>Preço (R$) <input id="preco" type="number" step="0.01" min="0.01" required></label>
+          <label>Estoque <input id="estoque" type="number" min="0" required></label>
+          <label>Ano de publicação <input id="anoPublicacao" type="number"></label>
+          <label>Gênero <input id="genero"></label>
+          <p id="erroLivro" class="erro"></p>
+          <div class="botoes">
+            <button type="submit">Salvar</button>
+            <button type="button" class="sec" onclick="limparForm()">Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Livros cadastrados</h2>
+        <div class="topo"><input id="busca" placeholder="Buscar por título ou autor..."></div>
+        <p id="erroLista" class="erro"></p>
+        <table>
+          <thead><tr><th>Título</th><th>Autor</th><th>Gênero</th><th>Preço</th><th>Estoque</th><th></th></tr></thead>
+          <tbody id="lista"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:20px">
+      <h2>Pedidos</h2>
+      <p id="erroPedidos" class="erro"></p>
+      <table>
+        <thead><tr><th>#</th><th>Cliente</th><th>Data</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody id="pedidos"></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<script src="/js/comum.js"></script>
+<script>
+const campos = ['titulo', 'autor', 'isbn', 'preco', 'estoque', 'anoPublicacao', 'genero'];
+
+// ---------- Acesso ----------
+async function iniciar() {
+  const u = await usuarioAtual();
+  const vendedor = u.logado && u.papel === 'VENDEDOR';
+  $('bloqueio').classList.toggle('oculto', vendedor);
+  $('conteudo').classList.toggle('oculto', !vendedor);
+
+  if (vendedor) {
+    $('areaUsuario').innerHTML = `<span>${esc(u.nome)}</span><a href="/">Ver loja</a>`
+      + '<button class="sec" onclick="sair()">Sair</button>';
+    recarregarTudo();
+  } else {
+    $('areaUsuario').innerHTML = '<a href="/">Ver loja</a>'
+      + (u.logado ? '<button class="sec" onclick="sair()">Sair</button>' : '');
+    if (u.logado) {
+      $('msgBloqueio').textContent = 'Você entrou como cliente. Só o vendedor pode editar os livros. Saia e entre com a conta de vendedor.';
+    }
+  }
+}
+
+$('formLogin').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('erroLogin').textContent = '';
+  try {
+    await sairDaConta();   // garante que não fica logado como cliente
+    await entrar($('loginEmail').value, $('loginSenha').value);
+    $('formLogin').reset();
+    iniciar();
+  } catch (err) { $('erroLogin').textContent = err.message; }
+});
+
+async function sair() {
+  await sairDaConta();
+  location.href = '/';
+}
+
+function recarregarTudo() {
+  carregarLivros();
+  carregarPedidos();
+  carregarResumo();
+}
+
+// ---------- Resumo ----------
+async function carregarResumo() {
+  const [livros, vendas] = await Promise.all([api('/api/livros/resumo'), api('/api/pedidos/resumo')]);
+  const maisVendido = vendas.maisVendidos.length
+    ? `${esc(vendas.maisVendidos[0].titulo)} (${vendas.maisVendidos[0].quantidade})` : '-';
+  $('resumo').innerHTML = `
+    <div class="card"><small>Títulos</small><b>${livros.totalTitulos}</b></div>
+    <div class="card"><small>Exemplares em estoque</small><b>${livros.totalExemplares}</b></div>
+    <div class="card"><small>Valor em estoque</small><b>${brl(livros.valorEmEstoque)}</b></div>
+    <div class="card"><small>Esgotados</small><b class="${livros.semEstoque ? 'zero' : ''}">${livros.semEstoque}</b></div>
+    <div class="card"><small>Pedidos válidos</small><b>${vendas.totalPedidos}</b></div>
+    <div class="card"><small>Faturamento</small><b>${brl(vendas.faturamento)}</b></div>
+    <div class="card"><small>Mais vendido</small><b style="font-size:1rem">${maisVendido}</b></div>`;
+}
+
+// ---------- Livros (CRUD) ----------
+async function carregarLivros() {
+  const busca = $('busca').value.trim();
+  const livros = await api('/api/livros' + (busca ? '?busca=' + encodeURIComponent(busca) : ''));
+  $('lista').innerHTML = livros.map(l => `
+    <tr>
+      <td>${esc(l.titulo)}</td><td>${esc(l.autor)}</td><td>${esc(l.genero || '-')}</td>
+      <td>${brl(l.preco)}</td>
+      <td class="${l.estoque === 0 ? 'zero' : ''}">${l.estoque}</td>
+      <td class="acoes">
+        <button class="sec" onclick="editar(${l.id})">Editar</button>
+        <button class="perigo" onclick="excluir(${l.id})">Excluir</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6" class="vazio">Nenhum livro encontrado.</td></tr>';
+}
+
+let timerBusca;
+$('busca').addEventListener('input', () => {
+  clearTimeout(timerBusca);
+  timerBusca = setTimeout(carregarLivros, 300);
+});
+
+async function editar(id) {
+  const l = await api(`/api/livros/${id}`);
+  $('id').value = l.id;
+  campos.forEach(c => $(c).value = l[c] ?? '');
+  $('tituloForm').textContent = 'Editar livro';
+  $('erroLivro').textContent = '';
+  $('titulo').focus();
+}
+
+async function excluir(id) {
+  if (!confirm('Excluir este livro?')) return;
+  $('erroLista').textContent = '';
+  try {
+    await api(`/api/livros/${id}`, { method: 'DELETE' });
+    if ($('id').value == id) limparForm();
+    carregarLivros();
+    carregarResumo();
+  } catch (err) { $('erroLista').textContent = err.message; }
+}
+
+function limparForm() {
+  $('formLivro').reset();
+  $('id').value = '';
+  $('tituloForm').textContent = 'Novo livro';
+  $('erroLivro').textContent = '';
+}
+
+$('formLivro').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('erroLivro').textContent = '';
+  const id = $('id').value;
+  const corpo = Object.fromEntries(campos.map(c => [c, $(c).value === '' ? null : $(c).value]));
+  try {
+    await enviarJson(id ? `/api/livros/${id}` : '/api/livros', id ? 'PUT' : 'POST', corpo);
+    mostrarMensagem(id ? 'Livro atualizado' : 'Livro cadastrado');
+    limparForm();
+    carregarLivros();
+    carregarResumo();
+  } catch (err) { $('erroLivro').textContent = err.message; }
+});
+
+// ---------- Pedidos ----------
+async function carregarPedidos() {
+  const pedidos = await api('/api/pedidos/todos');
+  $('pedidos').innerHTML = pedidos.map(p => `
+    <tr>
+      <td>${p.id}</td>
+      <td>${esc(p.cliente)}</td>
+      <td>${dataBR(p.dataHora)}</td>
+      <td>${p.itens.map(i => `${i.quantidade}× ${esc(i.titulo)}`).join('<br>')}</td>
+      <td>${brl(p.total)}</td>
+      <td>
+        <select onchange="mudarStatus(${p.id}, this.value)" ${p.status === 'CANCELADO' ? 'disabled' : ''}>
+          ${Object.keys(nomeStatus).map(s => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${nomeStatus[s]}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6" class="vazio">Nenhum pedido ainda.</td></tr>';
+}
+
+async function mudarStatus(id, status) {
+  $('erroPedidos').textContent = '';
+  if (status === 'CANCELADO' && !confirm(`Cancelar o pedido #${id}? Os livros voltam para o estoque.`)) {
+    carregarPedidos();
+    return;
+  }
+  try {
+    await api(`/api/pedidos/${id}/status?status=${status}`, { method: 'PUT' });
+    mostrarMensagem(`Pedido #${id}: ${nomeStatus[status]}`);
+  } catch (err) { $('erroPedidos').textContent = err.message; }
+  recarregarTudo();
+}
+
+iniciar();
+</script>
+</body>
+</html>

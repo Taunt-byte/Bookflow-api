@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BookFlow · Livraria online</title>
+<meta name="description" content="BookFlow: romances, clássicos, tecnologia e mais. Escolha seu livro e acompanhe o pedido até a entrega.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --tinta: #16203a;        /* azul-tinta: cabeçalho do herói, textos fortes */
+    --tinta-2: #26314f;
+    --texto: #1c2233;
+    --suave: #5c6478;
+    --linha: #e2e5ec;
+    --fundo: #ffffff;
+    --fundo-2: #f4f5f8;
+    --marca: #ffd23f;        /* amarelo marca-texto */
+    --marca-escura: #8a6a00;
+    --perigo: #b3261e;
+    --ok: #1f6b45;
+    --serif: "Literata", Georgia, "Times New Roman", serif;
+    --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: var(--sans); font-size: 16px; line-height: 1.5; color: var(--texto); background: var(--fundo); }
+  a { color: inherit; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--marca); outline-offset: 2px; border-radius: 4px; }
+  .oculto { display: none !important; }
+  .conteudo { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Botões ---------- */
+  .botao { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 11px 22px; font-weight: 600; cursor: pointer; text-decoration: none; background: var(--tinta); color: #fff; }
+  .botao:hover { background: var(--tinta-2); }
+  .botao.marca { background: var(--marca); color: var(--tinta); }
+  .botao.marca:hover { background: #ffdc66; }
+  .botao.claro { background: var(--fundo-2); color: var(--texto); }
+  .botao.claro:hover { background: var(--linha); }
+  .botao:disabled { opacity: .45; cursor: not-allowed; }
+  .link { background: none; border: 0; padding: 0; color: var(--tinta); text-decoration: underline; cursor: pointer; }
+
+  /* ---------- Cabeçalho ---------- */
+  .topo { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.96); border-bottom: 1px solid var(--linha); backdrop-filter: saturate(1.4) blur(6px); }
+  .topo .conteudo { display: flex; align-items: center; gap: 24px; height: 68px; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--serif); font-weight: 700; font-size: 1.45rem; color: var(--tinta); letter-spacing: -.01em; }
+  .logo-marca { display: flex; align-items: flex-end; gap: 2px; height: 26px; }
+  .logo-marca i { display: block; width: 6px; border-radius: 1px; }
+  .logo-marca i:nth-child(1) { height: 22px; background: var(--tinta); }
+  .logo-marca i:nth-child(2) { height: 26px; background: var(--marca); }
+  .logo-marca i:nth-child(3) { height: 18px; background: #2f7d6d; transform: rotate(10deg); transform-origin: bottom left; margin-left: 2px; }
+  .busca { flex: 1; max-width: 440px; position: relative; }
+  .busca input { width: 100%; height: 42px; border: 1px solid var(--linha); background: var(--fundo-2); border-radius: 999px; padding: 0 16px 0 40px; }
+  .busca input:focus { background: #fff; border-color: var(--tinta); outline: none; }
+  .busca svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--suave); }
+  .acoes-topo { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .acao { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 9px 12px; border-radius: 999px; cursor: pointer; text-decoration: none; font-weight: 500; font-size: .95rem; }
+  .acao:hover { background: var(--fundo-2); }
+  .contador { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--marca); color: var(--tinta); font-size: .78rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .contador.vazio { background: var(--fundo-2); color: var(--suave); }
+
+  /* ---------- Herói com a estante ---------- */
+  .heroi { background: var(--tinta); color: #fff; overflow: hidden; }
+  .heroi .conteudo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 48px; align-items: end; padding-top: 64px; }
+  .heroi-texto { padding-bottom: 64px; max-width: 30rem; }
+  .heroi h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(2.2rem, 4.6vw, 3.6rem); line-height: 1.06; letter-spacing: -.02em; margin: 0 0 20px; }
+  .heroi p { color: #c9cfdd; font-size: 1.08rem; margin: 0 0 28px; max-width: 26rem; }
+  .heroi-cta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .heroi-info { color: #aab2c5; font-size: .92rem; }
+
+  .estante { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 5px; min-height: 300px; padding: 0 12px; }
+  .estante::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: #0d1427; border-top: 3px solid #2d3a5e; }
+  .lombada { position: relative; z-index: 1; margin-bottom: 14px; border: 0; cursor: pointer; padding: 14px 0 12px; border-radius: 3px 3px 1px 1px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: #fff; box-shadow: inset 3px 0 0 rgba(255,255,255,.14), inset -4px 0 0 rgba(0,0,0,.18); transition: transform .2s ease; }
+  .lombada:hover, .lombada:focus-visible { transform: translateY(-10px); }
+  .lombada .t { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--serif); font-weight: 600; font-size: .92rem; line-height: 1.1; max-height: 78%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lombada .a { font-size: .66rem; font-weight: 600; opacity: .8; letter-spacing: .04em; }
+  .lombada .faixa { position: absolute; left: 0; right: 0; height: 5px; background: rgba(255,255,255,.22); }
+  .lombada.inclinada { transform: rotate(-6deg); transform-origin: bottom right; margin-left: 10px; }
+  .lombada.inclinada:hover, .lombada.inclinada:focus-visible { transform: rotate(-6deg) translateY(-10px); }
+  @media (prefers-reduced-motion: no-preference) {
+    .lombada { animation: subir .6s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i) * 60ms); }
+    @keyframes subir { from { opacity: 0; translate: 0 40px; } to { opacity: 1; translate: 0 0; } }
+  }
+
+  /* ---------- Catálogo ---------- */
+  .catalogo { padding: 56px 0 72px; }
+  .catalogo-topo { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 20px; }
+  .catalogo h2 { font-family: var(--serif); font-weight: 600; font-size: 2rem; letter-spacing: -.01em; margin: 0; }
+  .contagem { color: var(--suave); margin: 4px 0 0; }
+  .ordem { display: flex; align-items: center; gap: 10px; color: var(--suave); font-size: .92rem; }
+  .ordem select { border: 1px solid var(--linha); border-radius: 8px; padding: 8px 10px; background: #fff; }
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
+  .chip { border: 1px solid var(--linha); background: #fff; border-radius: 999px; padding: 7px 16px; cursor: pointer; font-size: .92rem; }
+  .chip:hover { border-color: var(--tinta); }
+  .chip[aria-pressed="true"] { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 40px 28px; }
+  .livro { display: flex; flex-direction: column; scroll-margin-top: 100px; }
+  .capa { position: relative; aspect-ratio: 2 / 3; border-radius: 2px 6px 6px 2px; padding: 22px 18px 18px 26px; display: flex; flex-direction: column; color: #fff; overflow: hidden; box-shadow: 0 1px 2px rgba(22,32,58,.12), 0 10px 24px -12px rgba(22,32,58,.45); }
+  .capa::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: linear-gradient(90deg, rgba(0,0,0,.28), rgba(0,0,0,.06) 70%, rgba(255,255,255,.12)); }
+  .capa .cg { font-size: .72rem; font-weight: 600; opacity: .85; }
+  .capa .ct { font-family: var(--serif); font-weight: 600; font-size: 1.32rem; line-height: 1.12; margin-top: auto; letter-spacing: -.01em; }
+  .capa .ca { font-size: .82rem; opacity: .9; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.35); }
+  .capa.clara { color: var(--tinta); }
+  .capa.clara .ca { border-top-color: rgba(22,32,58,.25); }
+  .capa.esgotada { filter: grayscale(.85) brightness(.95); }
+  .selo { position: absolute; top: 14px; right: 0; background: #fff; color: var(--perigo); font-size: .75rem; font-weight: 700; padding: 4px 10px; border-radius: 4px 0 0 4px; }
+  .info { padding-top: 14px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .info h3 { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; line-height: 1.25; margin: 0; }
+  .info .autor { color: var(--suave); font-size: .9rem; margin: 0; }
+  .info .preco-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 8px; }
+  .preco { font-weight: 600; font-size: 1.15rem; }
+  .estoque { font-size: .8rem; color: var(--suave); }
+  .estoque.pouco { color: var(--marca-escura); font-weight: 600; }
+  .info .botao { margin-top: auto; justify-content: center; padding: 10px 16px; }
+  .info .preco-linha { margin-bottom: 14px; flex-wrap: wrap; }
+  .estoque { white-space: nowrap; }
+  .estoque.no-carrinho { color: var(--ok); font-weight: 600; }
+  .curto { display: none; }
+  .livro.realce .capa { animation: realce 1.2s ease; }
+  @keyframes realce { 0%, 100% { outline: 0 solid var(--marca); } 30% { outline: 5px solid var(--marca); outline-offset: 4px; } }
+  .vazio { color: var(--suave); }
+  .vazio-grade { grid-column: 1 / -1; padding: 48px 0; text-align: center; }
+
+  /* ---------- Rodapé ---------- */
+  .rodape { border-top: 1px solid var(--linha); background: var(--fundo-2); padding: 40px 0; color: var(--suave); font-size: .92rem; }
+  .rodape .conteudo { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; }
+  .rodape nav { display: flex; gap: 20px; }
+
+  /* ---------- Diálogos (login, pedidos) e gaveta do carrinho ---------- */
+  dialog { border: 0; border-radius: 16px; padding: 28px; width: min(400px, 92vw); color: var(--texto); }
+  dialog::backdrop { background: rgba(13, 20, 39, .55); }
+  dialog h2 { font-family: var(--serif); font-weight: 600; font-size: 1.5rem; margin: 0 0 6px; }
+  .sub { color: var(--suave); margin: 0 0 12px; font-size: .95rem; }
+  label { display: block; font-size: .88rem; font-weight: 500; margin-top: 14px; }
+  label input { display: block; width: 100%; margin-top: 6px; height: 44px; border: 1px solid var(--linha); border-radius: 10px; padding: 0 12px; }
+  label input:focus { border-color: var(--tinta); outline: none; box-shadow: 0 0 0 3px rgba(255,210,63,.5); }
+  .erro { color: var(--perigo); font-size: .88rem; white-space: pre-line; min-height: 1.2em; margin: 10px 0 0; }
+  .linha-botoes { display: flex; gap: 10px; margin-top: 16px; }
+  .linha-botoes .botao { flex: 1; justify-content: center; }
+  .troca { color: var(--suave); font-size: .92rem; margin: 18px 0 0; text-align: center; }
+  .fechar { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--fundo-2); cursor: pointer; font-size: 1.2rem; line-height: 1; }
+  dialog { position: fixed; }
+
+  .gaveta { margin: 0 0 0 auto; height: 100vh; max-height: 100vh; width: min(420px, 100vw); border-radius: 0; padding: 0; display: flex; flex-direction: column; }
+  .gaveta:not([open]) { display: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .gaveta[open] { animation: deslizar .25s ease-out; }
+    @keyframes deslizar { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  }
+  .gaveta-cab { padding: 24px 24px 12px; border-bottom: 1px solid var(--linha); }
+  .gaveta-itens { flex: 1; overflow: auto; padding: 8px 24px; }
+  .gaveta-rodape { padding: 20px 24px 24px; border-top: 1px solid var(--linha); background: var(--fundo-2); }
+  .item { display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--linha); }
+  .item:last-child { border-bottom: 0; }
+  .mini-capa { width: 44px; aspect-ratio: 2 / 3; border-radius: 1px 3px 3px 1px; box-shadow: inset 3px 0 0 rgba(0,0,0,.2); }
+  .item b { font-family: var(--serif); font-weight: 600; display: block; line-height: 1.25; }
+  .item small { color: var(--suave); }
+  .qtd { display: flex; align-items: center; gap: 4px; border: 1px solid var(--linha); border-radius: 999px; padding: 2px; }
+  .qtd button { width: 30px; height: 30px; border: 0; border-radius: 50%; background: none; cursor: pointer; font-size: 1.05rem; }
+  .qtd button:hover:not(:disabled) { background: var(--fundo-2); }
+  .qtd button:disabled { opacity: .35; cursor: not-allowed; }
+  .qtd span { min-width: 20px; text-align: center; font-weight: 600; }
+  .total { display: flex; justify-content: space-between; align-items: baseline; font-size: 1.05rem; margin-bottom: 4px; }
+  .total b { font-size: 1.35rem; }
+  .gaveta-rodape .botao { width: 100%; justify-content: center; margin-top: 12px; padding: 14px; }
+  .carrinho-vazio { text-align: center; padding: 56px 12px; color: var(--suave); }
+
+  .dlg-pedidos { width: min(620px, 94vw); max-height: 86vh; }
+  .pedido { border: 1px solid var(--linha); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+  .pedido-cab { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pedido-cab .data { color: var(--suave); font-size: .88rem; }
+  .pedido-cab .valor { margin-left: auto; font-weight: 600; }
+  .pedido ul { margin: 10px 0 0; padding-left: 18px; color: var(--suave); font-size: .92rem; }
+  .status { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; }
+  .status.REALIZADO { background: #e3ebff; color: #1d3f8a; }
+  .status.ENVIADO   { background: #fff2cc; color: #6e5100; }
+  .status.ENTREGUE  { background: #dff3e7; color: #1f6b45; }
+  .status.CANCELADO { background: #fbe4e2; color: #8a2219; }
+
+  .aviso-vendedor { background: #fff6d6; border-bottom: 1px solid #f0dd99; color: #5c4600; font-size: .92rem; }
+  .aviso-vendedor .conteudo { padding: 10px 24px; }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--tinta); color: #fff; padding: 14px 22px; border-radius: 12px; z-index: 50; box-shadow: 0 10px 30px rgba(13,20,39,.3); max-width: 92vw; }
+
+  /* ---------- Telas menores ---------- */
+  @media (max-width: 900px) {
+    .heroi .conteudo { grid-template-columns: 1fr; gap: 8px; padding-top: 44px; }
+    .heroi-texto { padding-bottom: 20px; }
+    .estante { justify-content: flex-start; overflow-x: auto; min-height: 250px; padding-top: 24px; }
+    .busca { display: none; }
+    .busca.movel { display: block; max-width: none; margin: 0 0 24px; }
+  }
+  @media (min-width: 901px) { .busca.movel { display: none; } }
+  @media (max-width: 560px) {
+    .conteudo { padding: 0 16px; }
+    .acao .rotulo { display: none; }
+    .grade { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 16px; }
+    .capa .ct { font-size: 1.05rem; }
+    .capa { padding: 16px 12px 12px 20px; }
+    .longo { display: none; }
+    .curto { display: inline; }
+  }
+</style>
+</head>
+<body>
+
+<div id="avisoVendedor" class="aviso-vendedor oculto">
+  <div class="conteudo">Você entrou como vendedor, então as compras ficam desativadas. Para editar os livros, abra o <a href="/painel.html">painel do vendedor</a>.</div>
+</div>
+
+<header class="topo">
+  <div class="conteudo">
+    <a class="logo" href="/" aria-label="BookFlow, página inicial">
+      <span class="logo-marca" aria-hidden="true"><i></i><i></i><i></i></span>BookFlow
+    </a>
+    <form class="busca" role="search" onsubmit="event.preventDefault()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="busca" type="search" placeholder="Buscar por título ou autor" aria-label="Buscar livros">
+    </form>
+    <nav class="acoes-topo" id="acoesTopo" aria-label="Conta e carrinho"></nav>
+  </div>
+</header>
+
+<section class="heroi">
+  <div class="conteudo">
+    <div class="heroi-texto">
+      <h1>Sua próxima leitura está na estante.</h1>
+      <p>Romances, clássicos, tecnologia e mais. Escolha o livro, finalize a compra e acompanhe o pedido até chegar em casa.</p>
+      <div class="heroi-cta">
+        <a class="botao marca" href="#catalogo">Ver catálogo</a>
+        <span class="heroi-info" id="heroiInfo"></span>
+      </div>
+    </div>
+    <div class="estante" id="estante" aria-label="Livros em destaque"></div>
+  </div>
+</section>
+
+<main class="catalogo" id="catalogo">
+  <div class="conteudo">
+    <form class="busca movel" role="search" onsubmit="event.preventDefault()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="buscaMovel" type="search" placeholder="Buscar por título ou autor" aria-label="Buscar livros">
+    </form>
+    <div class="catalogo-topo">
+      <div>
+        <h2>Catálogo</h2>
+        <p class="contagem" id="contagem"></p>
+      </div>
+      <label class="ordem">Ordenar por
+        <select id="ordem">
+          <option value="titulo">Título (A a Z)</option>
+          <option value="menor">Menor preço</option>
+          <option value="maior">Maior preço</option>
+          <option value="recentes">Lançamento mais recente</option>
+        </select>
+      </label>
+    </div>
+    <div class="filtros" id="filtros" role="group" aria-label="Filtrar por gênero"></div>
+    <div class="grade" id="grade"></div>
+  </div>
+</main>
+
+<footer class="rodape">
+  <div class="conteudo">
+    <span><b style="color:var(--tinta)">BookFlow</b>, livraria online feita com Java e Spring Boot.</span>
+    <nav>
+      <a href="#catalogo">Catálogo</a>
+      <a href="/painel.html">Área do vendedor</a>
+    </nav>
+  </div>
+</footer>
+
+<!-- Carrinho -->
+<dialog id="gaveta" class="gaveta" aria-labelledby="tituloCarrinho">
+  <div class="gaveta-cab">
+    <h2 id="tituloCarrinho">Seu carrinho</h2>
+    <p class="sub" id="resumoCarrinho"></p>
+    <button class="fechar" onclick="$('gaveta').close()" aria-label="Fechar carrinho">×</button>
+  </div>
+  <div class="gaveta-itens" id="itensCarrinho"></div>
+  <div class="gaveta-rodape">
+    <div class="total"><span>Total</span><b id="totalCarrinho">R$ 0,00</b></div>
+    <p class="erro" id="erroCarrinho"></p>
+    <button class="botao marca" id="btnFinalizar">Finalizar compra</button>
+  </div>
+</dialog>
+
+<!-- Meus pedidos -->
+<dialog id="dlgPedidos" class="dlg-pedidos" aria-labelledby="tituloPedidos">
+  <button class="fechar" onclick="$('dlgPedidos').close()" aria-label="Fechar">×</button>
+  <h2 id="tituloPedidos">Meus pedidos</h2>
+  <p class="sub">O status muda conforme o vendedor envia e entrega.</p>
+  <div id="meusPedidos"></div>
+</dialog>
+
+<!-- Entrar / criar conta -->
+<dialog id="dlgLogin" aria-labelledby="tituloLogin">
+  <button class="fechar" onclick="fecharLogin()" aria-label="Fechar">×</button>
+  <form id="formLogin">
+    <h2 id="tituloLogin">Entrar</h2>
+    <p class="sub">Use seu e-mail e senha da BookFlow.</p>
+    <label>E-mail <input id="loginEmail" type="email" required autocomplete="username"></label>
+    <label>Senha <input id="loginSenha" type="password" required autocomplete="current-password"></label>
+    <p class="erro" id="erroLogin"></p>
+    <div class="linha-botoes"><button type="submit" class="botao">Entrar</button></div>
+    <p class="troca">Ainda não tem conta? <button type="button" class="link" onclick="mostrarCadastro(true)">Criar conta</button></p>
+  </form>
+  <form id="formCadastro" class="oculto">
+    <h2>Criar conta</h2>
+    <p class="sub">Leva menos de um minuto.</p>
+    <label>Nome <input id="cadNome" required autocomplete="name"></label>
+    <label>E-mail <input id="cadEmail" type="email" required autocomplete="email"></label>
+    <label>Senha <input id="cadSenha" type="password" minlength="6" required autocomplete="new-password" placeholder="Mínimo de 6 caracteres"></label>
+    <p class="erro" id="erroCadastro"></p>
+    <div class="linha-botoes"><button type="submit" class="botao">Criar conta</button></div>
+    <p class="troca">Já tem conta? <button type="button" class="link" onclick="mostrarCadastro(false)">Entrar</button></p>
+  </form>
+</dialog>
+
+<script src="/js/comum.js"></script>
+<script>
+let usuario = { logado: false };
+let todos = [];                    // todos os livros vindos da API
+let generoAtivo = 'Todos';
+let depoisDoLogin = null;          // ação para continuar depois de entrar (ex.: finalizar compra)
+let carrinho = lerCarrinho();      // { idDoLivro: { titulo, autor, preco, estoque, qtd } }
+
+const ehVendedor = () => usuario.papel === 'VENDEDOR';
+const ehCliente = () => usuario.logado && !ehVendedor();
+
+// ---------- Cores das capas ----------
+const paleta = [
+  { fundo: '#c8423b' }, { fundo: '#2f7d6d' }, { fundo: '#4a6fb5' }, { fundo: '#e0a526', clara: true },
+  { fundo: '#7a4c94' }, { fundo: '#e9e2d2', clara: true }, { fundo: '#24496b' }, { fundo: '#9a5b2e' }
+];
+const corDe = id => paleta[(Number(id) - 1 + paleta.length) % paleta.length];
+const iniciais = nome => nome.split(/\s+/).filter(p => p.length > 2 || /^[A-Z]\.?$/.test(p)).slice(-2).map(p => p[0]).join('');
+
+// ---------- Carrinho guardado no navegador ----------
+function lerCarrinho() {
+  try { return JSON.parse(localStorage.getItem('bookflow-carrinho')) || {}; } catch { return {}; }
+}
+function salvarCarrinho() {
+  try { localStorage.setItem('bookflow-carrinho', JSON.stringify(carrinho)); } catch { }
+}
+
+// ---------- Cabeçalho e conta ----------
+async function atualizarUsuario() {
+  usuario = await usuarioAtual();
+  renderTopo();
+  $('avisoVendedor').classList.toggle('oculto', !ehVendedor());
+}
+
+function renderTopo() {
+  const qtd = Object.values(carrinho).reduce((s, i) => s + i.qtd, 0);
+  const icone = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 7h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 7Z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg>';
+  let html = '';
+  if (!usuario.logado) {
+    html += '<button class="acao" onclick="abrirLogin()">Entrar</button>';
+  } else {
+    if (ehVendedor()) html += '<a class="acao" href="/painel.html">Painel do vendedor</a>';
+    else html += '<button class="acao" onclick="abrirPedidos()">Meus pedidos</button>';
+    html += `<button class="acao" onclick="sair()" title="Sair da conta">Sair <span class="rotulo">(${esc(usuario.nome.split(' ')[0])})</span></button>`;
+  }
+  html += `<button class="acao" onclick="abrirCarrinho()" aria-label="Carrinho com ${qtd} ${qtd === 1 ? 'item' : 'itens'}">
+             ${icone}<span class="rotulo">Carrinho</span><span class="contador ${qtd ? '' : 'vazio'}">${qtd}</span></button>`;
+  $('acoesTopo').innerHTML = html;
+}
+
+function abrirLogin() {
+  mostrarCadastro(false);
+  $('erroLogin').textContent = '';
+  if ($('gaveta').open) $('gaveta').close();
+  $('dlgLogin').showModal();
+  $('loginEmail').focus();
+}
+function fecharLogin() {
+  $('dlgLogin').close();
+  depoisDoLogin = null;
+}
+function mostrarCadastro(sim) {
+  $('formLogin').classList.toggle('oculto', sim);
+  $('formCadastro').classList.toggle('oculto', !sim);
+  $('erroCadastro').textContent = '';
+}
+
+async function posLogin() {
+  const acao = depoisDoLogin;
+  $('dlgLogin').close();
+  depoisDoLogin = null;
+  await atualizarUsuario();
+  if (ehVendedor()) { location.href = '/painel.html'; return; }
+  mostrarMensagem(`Olá, ${usuario.nome.split(' ')[0]}!`);
+  renderCatalogo();
+  if (acao) acao();
+}
+
+$('formLogin').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('erroLogin').textContent = '';
+  try {
+    await entrar($('loginEmail').value, $('loginSenha').value);
+    $('formLogin').reset();
+    await posLogin();
+  } catch (err) { $('erroLogin').textContent = err.message; }
+});
+
+$('formCadastro').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('erroCadastro').textContent = '';
+  const email = $('cadEmail').value, senha = $('cadSenha').value;
+  try {
+    await enviarJson('/api/auth/cadastro', 'POST', { nome: $('cadNome').value, email, senha });
+    await entrar(email, senha);
+    $('formCadastro').reset();
+    await posLogin();
+  } catch (err) { $('erroCadastro').textContent = err.message; }
+});
+
+async function sair() {
+  await sairDaConta();
+  await atualizarUsuario();
+  renderCatalogo();
+  mostrarMensagem('Você saiu da conta.');
+}
+
+// ---------- Livros ----------
+async function carregarLivros() {
+  todos = await api('/api/livros');
+  // Atualiza preço e estoque de quem já está no carrinho
+  todos.forEach(l => {
+    const item = carrinho[l.id];
+    if (item) { item.preco = l.preco; item.estoque = l.estoque; item.qtd = Math.min(item.qtd, l.estoque); }
+  });
+  Object.keys(carrinho).forEach(id => {
+    if (!todos.some(l => l.id == id) || carrinho[id].qtd <= 0) delete carrinho[id];
+  });
+  salvarCarrinho();
+
+  const disponiveis = todos.filter(l => l.estoque > 0).length;
+  $('heroiInfo').textContent = `${disponiveis} de ${todos.length} títulos disponíveis agora`;
+  renderEstante();
+  renderFiltros();
+  renderCatalogo();
+  renderTopo();
+}
+
+function renderEstante() {
+  const destaques = [...todos].sort((a, b) => b.estoque - a.estoque).slice(0, 10);
+  $('estante').innerHTML = destaques.map((l, i) => {
+    const cor = corDe(l.id);
+    const altura = 210 + ([...l.titulo].length * 7) % 80;
+    const largura = 40 + (l.autor.length * 3) % 22;
+    const inclinada = i === destaques.length - 1 && destaques.length > 4;
+    return `<button class="lombada ${inclinada ? 'inclinada' : ''}" style="--i:${i};height:${altura}px;width:${largura}px;background:${cor.fundo};${cor.clara ? 'color:var(--tinta)' : ''}"
+              onclick="mostrarLivro(${l.id})" aria-label="${esc(l.titulo)}, de ${esc(l.autor)}">
+              <span class="faixa" style="top:22px"></span>
+              <span class="t">${esc(l.titulo)}</span>
+              <span class="a">${esc(iniciais(l.autor))}</span>
+            </button>`;
+  }).join('');
+}
+
+function mostrarLivro(id) {
+  generoAtivo = 'Todos';
+  $('busca').value = $('buscaMovel').value = '';
+  renderFiltros();
+  renderCatalogo();
+  const el = document.getElementById('livro-' + id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  el.classList.remove('realce');
+  void el.offsetWidth;            // reinicia a animação
+  el.classList.add('realce');
+}
+
+function renderFiltros() {
+  const generos = ['Todos', ...new Set(todos.map(l => l.genero).filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt')))];
+  if (!generos.includes(generoAtivo)) generoAtivo = 'Todos';
+  generosAtuais = generos;
+  $('filtros').innerHTML = generos.map((g, i) =>
+    `<button class="chip" aria-pressed="${g === generoAtivo}" onclick="filtrar(generosAtuais[${i}])">${esc(g)}</button>`).join('');
+}
+let generosAtuais = [];
+function filtrar(g) { generoAtivo = g; renderFiltros(); renderCatalogo(); }
+
+function livrosVisiveis() {
+  const termo = ($('busca').value || $('buscaMovel').value).trim().toLowerCase();
+  const ordens = {
+    titulo: (a, b) => a.titulo.localeCompare(b.titulo, 'pt'),
+    menor: (a, b) => a.preco - b.preco,
+    maior: (a, b) => b.preco - a.preco,
+    recentes: (a, b) => (b.anoPublicacao || 0) - (a.anoPublicacao || 0)
+  };
+  return todos
+    .filter(l => generoAtivo === 'Todos' || l.genero === generoAtivo)
+    .filter(l => !termo || l.titulo.toLowerCase().includes(termo) || l.autor.toLowerCase().includes(termo))
+    .sort(ordens[$('ordem').value]);
+}
+
+function textoEstoque(n) {
+  if (n === 0) return ['', 'Esgotado'];
+  if (n <= 3) return ['pouco', n === 1 ? 'Última unidade' : `Últimas ${n} unidades`];
+  return ['', 'Em estoque'];
+}
+
+function renderCatalogo() {
+  const lista = livrosVisiveis();
+  const termo = ($('busca').value || $('buscaMovel').value).trim();
+  $('contagem').textContent = lista.length === 1 ? '1 livro' : `${lista.length} livros`;
+  const vendedor = ehVendedor();
+
+  $('grade').innerHTML = lista.map(l => {
+    const cor = corDe(l.id);
+    const [classe, texto] = textoEstoque(l.estoque);
+    const noCarrinho = carrinho[l.id]?.qtd || 0;
+    const esgotado = l.estoque === 0;
+    const rotulo = esgotado ? 'Esgotado'
+      : noCarrinho >= l.estoque ? 'Todo o estoque no carrinho'
+      : '<span class="longo">Adicionar ao carrinho</span><span class="curto">Adicionar</span>';
+    return `
+      <article class="livro" id="livro-${l.id}">
+        <div class="capa ${cor.clara ? 'clara' : ''} ${esgotado ? 'esgotada' : ''}" style="background:${cor.fundo}" aria-hidden="true">
+          ${esgotado ? '<span class="selo">Esgotado</span>' : ''}
+          <span class="cg">${esc(l.genero || '')}</span>
+          <span class="ct">${esc(l.titulo)}</span>
+          <span class="ca">${esc(l.autor)}</span>
+        </div>
+        <div class="info">
+          <h3>${esc(l.titulo)}</h3>
+          <p class="autor">${esc(l.autor)}${l.anoPublicacao ? ', ' + l.anoPublicacao : ''}</p>
+          <div class="preco-linha">
+            <span class="preco">${brl(l.preco)}</span>
+            ${noCarrinho
+              ? `<span class="estoque no-carrinho">${noCarrinho} no carrinho</span>`
+              : `<span class="estoque ${classe}">${texto}</span>`}
+          </div>
+          <button class="botao" ${esgotado || vendedor || noCarrinho >= l.estoque ? 'disabled' : ''}
+                  onclick="adicionar(${l.id})">${rotulo}</button>
+        </div>
+      </article>`;
+  }).join('') || `
+      <div class="vazio-grade">
+        <p class="vazio">${termo ? `Nenhum livro encontrado para "${esc(termo)}".` : 'Nenhum livro neste gênero.'}</p>
+        <button class="botao claro" onclick="limparFiltros()">Ver todos os livros</button>
+      </div>`;
+}
+
+function limparFiltros() {
+  $('busca').value = $('buscaMovel').value = '';
+  filtrar('Todos');
+}
+
+let timerBusca;
+['busca', 'buscaMovel'].forEach(id => $(id).addEventListener('input', e => {
+  const outro = id === 'busca' ? 'buscaMovel' : 'busca';
+  $(outro).value = e.target.value;
+  clearTimeout(timerBusca);
+  timerBusca = setTimeout(() => {
+    renderCatalogo();
+    if (e.target.value.trim() && window.scrollY < 200) $('catalogo').scrollIntoView({ block: 'start' });
+  }, 200);
+}));
+$('ordem').addEventListener('change', renderCatalogo);
+
+// ---------- Carrinho ----------
+function adicionar(id) {
+  const l = todos.find(x => x.id === id);
+  if (!l) return;
+  const item = carrinho[id] || { titulo: l.titulo, autor: l.autor, preco: l.preco, estoque: l.estoque, qtd: 0 };
+  if (item.qtd >= l.estoque) return;
+  item.qtd++;
+  carrinho[id] = item;
+  salvarCarrinho();
+  renderTopo();
+  renderCatalogo();
+  mostrarMensagem(`"${l.titulo}" foi para o carrinho.`);
+}
+
+function mudarQtd(id, delta) {
+  $('erroCarrinho').textContent = '';
+  const item = carrinho[id];
+  if (!item) return;
+  item.qtd = Math.min(item.qtd + delta, item.estoque);
+  if (item.qtd <= 0) delete carrinho[id];
+  salvarCarrinho();
+  renderCarrinho();
+  renderTopo();
+  renderCatalogo();
+}
+
+function abrirCarrinho() {
+  $('erroCarrinho').textContent = '';
+  renderCarrinho();
+  $('gaveta').showModal();
+}
+
+function renderCarrinho() {
+  const itens = Object.entries(carrinho);
+  const qtd = itens.reduce((s, [, i]) => s + i.qtd, 0);
+  $('resumoCarrinho').textContent = qtd ? `${qtd} ${qtd === 1 ? 'livro' : 'livros'}` : '';
+  $('itensCarrinho').innerHTML = itens.length ? itens.map(([id, i]) => {
+    const cor = corDe(id);
+    return `
+      <div class="item">
+        <div class="mini-capa" style="background:${cor.fundo}" aria-hidden="true"></div>
+        <div><b>${esc(i.titulo)}</b><small>${brl(i.preco)} cada</small></div>
+        <div class="qtd" role="group" aria-label="Quantidade de ${esc(i.titulo)}">
+          <button onclick="mudarQtd(${id}, -1)" aria-label="${i.qtd === 1 ? 'Remover' : 'Diminuir'}">${i.qtd === 1 ? '×' : '−'}</button>
+          <span>${i.qtd}</span>
+          <button onclick="mudarQtd(${id}, 1)" aria-label="Aumentar" ${i.qtd >= i.estoque ? 'disabled' : ''}>+</button>
+        </div>
+      </div>`;
+  }).join('') : `
+      <div class="carrinho-vazio">
+        <p>Seu carrinho está vazio.</p>
+        <button class="botao claro" onclick="$('gaveta').close(); location.hash = 'catalogo'">Ver catálogo</button>
+      </div>`;
+
+  const total = itens.reduce((s, [, i]) => s + i.preco * i.qtd, 0);
+  $('totalCarrinho').textContent = brl(total);
+  $('btnFinalizar').disabled = !itens.length || ehVendedor();
+  $('btnFinalizar').textContent = usuario.logado ? 'Finalizar compra' : 'Entrar e finalizar compra';
+}
+
+$('btnFinalizar').addEventListener('click', () => {
+  $('erroCarrinho').textContent = '';
+  if (!usuario.logado) {
+    depoisDoLogin = () => abrirCarrinho();
+    abrirLogin();
+    return;
+  }
+  finalizarCompra();
+});
+
+async function finalizarCompra() {
+  const itens = Object.entries(carrinho).map(([id, i]) => ({ livroId: Number(id), quantidade: i.qtd }));
+  if (!itens.length) return;
+  $('btnFinalizar').disabled = true;
+  $('btnFinalizar').textContent = 'Finalizando...';
+  try {
+    const pedido = await enviarJson('/api/pedidos', 'POST', { itens });
+    carrinho = {};
+    salvarCarrinho();
+    $('gaveta').close();
+    await carregarLivros();
+    mostrarMensagem(`Pedido #${pedido.id} realizado. Total: ${brl(pedido.total)}`);
+    abrirPedidos();
+  } catch (err) {
+    await carregarLivros();
+    renderCarrinho();
+    $('erroCarrinho').textContent = err.message;
+  }
+}
+
+// ---------- Meus pedidos ----------
+async function abrirPedidos() {
+  $('meusPedidos').innerHTML = '<p class="vazio">Carregando...</p>';
+  $('dlgPedidos').showModal();
+  try {
+    const pedidos = await api('/api/pedidos/meus');
+    $('meusPedidos').innerHTML = pedidos.length ? pedidos.map(p => `
+        <div class="pedido">
+          <div class="pedido-cab">
+            <b>Pedido #${p.id}</b>
+            <span class="status ${p.status}">${nomeStatus[p.status]}</span>
+            <span class="data">${dataBR(p.dataHora)}</span>
+            <span class="valor">${brl(p.total)}</span>
+          </div>
+          <ul>${p.itens.map(i => `<li>${i.quantidade}× ${esc(i.titulo)}, ${brl(i.subtotal)}</li>`).join('')}</ul>
+        </div>`).join('')
+      : '<p class="vazio">Você ainda não fez nenhum pedido. Que tal começar pelo catálogo?</p>';
+  } catch (err) {
+    $('meusPedidos').innerHTML = `<p class="erro">${esc(err.message)}</p>`;
+  }
+}
+
+// Fecha diálogos clicando fora deles
+document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => {
+  if (e.target !== d) return;
+  const r = d.getBoundingClientRect();
+  const fora = e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+  if (fora) d.id === 'dlgLogin' ? fecharLogin() : d.close();
+}));
+
+// ---------- Início ----------
+(async () => {
+  await atualizarUsuario();
+  await carregarLivros();
+})();
+</script>
+</body>
+</html>
